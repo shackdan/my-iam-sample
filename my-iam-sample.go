@@ -25,13 +25,7 @@ func NewMyIamSampleStack(scope constructs.Construct, id string, props *MyIamSamp
 	awscdk.Tags_Of(stack).Add(jsii.String("Environment"), jsii.String("dev"), &awscdk.TagProps{})
 	awscdk.Tags_Of(stack).Add(jsii.String("Owner"), jsii.String("dannyboy"), &awscdk.TagProps{})
 
-	// The code that defines your stack goes here
-
-	// example resource
-	// queue := awssqs.NewQueue(stack, jsii.String("MyIamTestQueue"), &awssqs.QueueProps{
-	// 	VisibilityTimeout: awscdk.Duration_Seconds(jsii.Number(300)),
-	// })
-
+	// Create policy document
 	policyDocument := awsiam.NewPolicyDocument(&awsiam.PolicyDocumentProps{
 		Statements: &[]awsiam.PolicyStatement{
 			awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
@@ -45,17 +39,20 @@ func NewMyIamSampleStack(scope constructs.Construct, id string, props *MyIamSamp
 		},
 	})
 
+	// Create policy and reference policy document
 	myPolicy := iam.NewManagedPolicy(stack, jsii.String("my-cdk-policy"), &iam.ManagedPolicyProps{
 		Document:          policyDocument,
 		ManagedPolicyName: jsii.String("my-cdk-managed-policy"),
 	})
 
+	// Create role set trust to root of the current account, and add inline policy
 	myrole := iam.NewRole(stack, jsii.String("my-cdk-role"), &iam.RoleProps{
 		RoleName:       jsii.String("my-cdk-role"),
 		AssumedBy:      iam.NewAccountPrincipal(jsii.String(*iam.NewAccountRootPrincipal().PrincipalAccount())),
 		InlinePolicies: &map[string]iam.PolicyDocument{"MyPolicy": policyDocument},
 	})
 
+	//Add policies to new role (Managed and in-line)
 	myrole.AddManagedPolicy(awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("AmazonS3ReadOnlyAccess")))
 	myrole.AddToPolicy(iam.NewPolicyStatement(&iam.PolicyStatementProps{ //add "in-line policy" NO option to name the given policy
 		Actions: &[]*string{
@@ -87,29 +84,8 @@ func main() {
 	app.Synth(nil)
 }
 
-// env determines the AWS environment (account+region) in which our stack is to
-// be deployed. For more information see: https://docs.aws.amazon.com/cdk/latest/guide/environments.html
 func env() *awscdk.Environment {
-	// If unspecified, this stack will be "environment-agnostic".
-	// Account/Region-dependent features and context lookups will not work, but a
-	// single synthesized template can be deployed anywhere.
-	//---------------------------------------------------------------------------
+
 	return nil
 
-	// Uncomment if you know exactly what account and region you want to deploy
-	// the stack to. This is the recommendation for production stacks.
-	//---------------------------------------------------------------------------
-	// return &awscdk.Environment{
-	//  Account: jsii.String("123456789012"),
-	//  Region:  jsii.String("us-east-1"),
-	// }
-
-	// Uncomment to specialize this stack for the AWS Account and Region that are
-	// implied by the current CLI configuration. This is recommended for dev
-	// stacks.
-	//---------------------------------------------------------------------------
-	// return &awscdk.Environment{
-	//  Account: jsii.String(os.Getenv("CDK_DEFAULT_ACCOUNT")),
-	//  Region:  jsii.String(os.Getenv("CDK_DEFAULT_REGION")),
-	// }
 }
